@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メンタル復職面談</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            text-align: left;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+        .question-box {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #eef;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            display: inline-block;
+        }
+        textarea {
+            width: 100%;
+            height: 60px;
+            margin-top: 10px;
+            padding: 5px;
+        }
+        .login-container {
+            text-align: center;
+            margin-top: 50px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="login">
+        <h2>ログイン</h2>
+        <label for="userId">ID:</label>
+        <input type="text" id="userId"><br><br>
+        <label for="password">パスワード:</label>
+        <input type="password" id="password"><br><br>
+        <button onclick="checkLogin()">ログイン</button>
+    </div>
+
+    <div class="container hidden" id="report">
+        <h1>メンタル復職面談</h1>
+        <h2>STEP1: 病状が回復している段階に達しているか？</h2>
+        <div id="step1"></div>
+        <h2 style="margin-top: 40px;">STEP2: 業務水準まで回復している段階であるか？</h2>
+        <div id="step2"></div>
+        <button onclick="evaluateResults()">結果を確認</button>
+        <div id="result" class="result-box hidden">
+            <h2>結果</h2>
+            <p id="resultText"></p>
+            <textarea id="resultNotes" placeholder="結果に関するメモを記入してください..."></textarea>
+            <button onclick="saveResultsAsWord()">結果を保存</button>
+            <button onclick="location.reload()">最初のページに戻る</button>
+        </div>
+    </div>
+
+    <script>
+        const validUserId = "admin";
+        const validPassword = "password123";
+        let step2Answers = [];
+
+        function checkLogin() {
+            let userId = document.getElementById("userId").value;
+            let password = document.getElementById("password").value;
+            if (userId === validUserId && password === validPassword) {
+                document.getElementById("login").classList.add("hidden");
+                document.getElementById("report").classList.remove("hidden");
+            } else {
+                alert("IDまたはパスワードが間違っています。");
+            }
+        }
+
+        let step1Questions = [
+            "休職に至った経緯や症状をもう一度話してください。",
+            "その症状は、休職してどのようになりましたか？",
+            "症状は今は完全に治っていますか？それとも少し残っているが、自分で制御できる範囲内ですか？",
+            "薬はどんなものを飲んでいますか？副作用はありますか？",
+            "運転業務がある場合、睡眠薬や抗不安薬はNGと判断される可能性が高いですが、摂取していますか？"
+        ];
+        
+        let step2Questions = [
+            "朝起きる時間、寝る時間が仕事行く時と同じ時間にキチンと出来ていますか？",
+            "睡眠状態や食欲が戻っていますか？",
+            "通勤訓練を週に1〜2回以上の頻度で行っていますか？",
+            "通勤訓練をしていない日も1日を通して活動的（運動、図書館で仕事関連の学習など）に平日5日以上は過ごせていますか？",
+            "日中眠気が基本なく、昼寝をしていませんか（昼寝はNG）？",
+            "疲れていても夜寝れば翌日には疲れが取れていますか？",
+            "調子の波があってもセルフリハビリ生活を継続できていますか？",
+            "業務のことを思い出して、今の体調でついていけそうだと思えますか？",
+            "働いてみて症状が再燃しそうな時の対応を考えていますか？"
+        ];
+
+        function createQuestions(containerId, questions, withYesNo = false) {
+            let container = document.getElementById(containerId);
+            questions.forEach((q, index) => {
+                let div = document.createElement("div");
+                div.classList.add("question-box");
+                div.innerHTML = `<strong>${index + 1}: ${q}</strong>`;
+                if (withYesNo) {
+                    let yesButton = document.createElement("button");
+                    yesButton.innerText = "YES";
+                    yesButton.onclick = function() { recordAnswer(index, true, div); };
+                    let noButton = document.createElement("button");
+                    noButton.innerText = "NO";
+                    noButton.onclick = function() { recordAnswer(index, false, div); };
+                    div.appendChild(yesButton);
+                    div.appendChild(noButton);
+                }
+                let textarea = document.createElement("textarea");
+                textarea.placeholder = "メモを記入してください...";
+                div.appendChild(textarea);
+                container.appendChild(div);
+            });
+        }
+
+        function recordAnswer(index, answer, element) {
+            step2Answers[index] = answer;
+            element.style.color = answer ? "green" : "red";
+        }
+
+        function evaluateResults() {
+            let allYes = step2Answers.length === step2Questions.length && step2Answers.every(ans => ans === true);
+            document.getElementById("resultText").innerText = allYes ? "復職可能" : "2週間後に再面談とする。";
+            document.getElementById("result").classList.remove("hidden");
+        }
+
+        createQuestions("step1", step1Questions);
+        createQuestions("step2", step2Questions, true);
+    </script>
+</body>
+</html>
